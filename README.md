@@ -27,7 +27,7 @@
 
 ```bash
 # 下載腳本
-git clone https://github.com/你的帳號/local-db-server-installer.git
+git clone https://github.com/KuiDaXElaina/Local-MariaDB-Server-Installer.git
 cd local-db-server-installer
 
 # 執行腳本（自動化並包含互動輸入）
