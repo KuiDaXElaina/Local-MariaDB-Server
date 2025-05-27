@@ -63,7 +63,12 @@ mv phpMyAdmin-*-all-languages phpmyadmin
 mkdir -p /usr/share/phpmyadmin/tmp
 chmod 777 /usr/share/phpmyadmin/tmp
 cp /usr/share/phpmyadmin/config.sample.inc.php /usr/share/phpmyadmin/config.inc.php
-sed -i "s|\['blowfish_secret'\] = ''|\['blowfish_secret'\] = '$(openssl rand -base64 32)'|g" /usr/share/phpmyadmin/config.inc.php
+
+# 生成 32 字元的 blowfish_secret
+blowfish_secret=$(openssl rand -base64 32 | cut -c1-32)
+sed -i "s|\['blowfish_secret'\] = ''|\['blowfish_secret'\] = '${blowfish_secret}'|g" /usr/share/phpmyadmin/config.inc.php
+
+echo "✅ phpMyAdmin 已安裝。"
 
 # === 偵測內網 IP 與網段 ===
 ip=$(hostname -I | awk '{print $1}')
@@ -85,20 +90,23 @@ server {
     server_name _;
 
     location /$admin_path {
-        root /usr/share/phpmyadmin;
+        alias /usr/share/phpmyadmin/;
         index index.php index.html index.htm;
 
         allow $subnet;
         deny all;
 
+        try_files \$uri \$uri/ @phpmyadmin;
+
         location ~ \.php\$ {
             include snippets/fastcgi-php.conf;
             fastcgi_pass unix:/run/php/php${php_version}-fpm.sock;
+            fastcgi_param SCRIPT_FILENAME \$request_filename;
         }
+    }
 
-        location ~* \.(jpg|jpeg|gif|css|png|js|ico|html|xml|txt)\$ {
-            root /usr/share/phpmyadmin;
-        }
+    location @phpmyadmin {
+        rewrite ^/$admin_path/(.*)$ /$admin_path/index.php?\$1 last;
     }
 
     location / {
